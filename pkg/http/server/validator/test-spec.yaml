@@ -1,0 +1,189 @@
+openapi: 3.0.3
+info:
+  title: Test Spec
+  description: Test Spec
+  version: 0.0.0
+paths:
+  /v1/watchlist:
+    get:
+      summary: Returns list of user watchlists
+      parameters:
+        - &userID
+          name: X-User-Id
+          in: header
+          description: Unique user ID
+          required: true
+          schema:
+            $ref: "#/components/schemas/Int64ID"
+      responses:
+        default: &error
+          description: Some kind of error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        '200':
+          description: List of watchlist sorted by order
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  required:
+                    - id
+                    - name
+                    - currency_id
+                    - instrument_ids
+                  properties: &watchlistProps
+                    id:
+                      $ref: "#/components/schemas/Int64ID"
+                    name:
+                      type: string
+                      example: My Test Watchlist
+                    currency_id:
+                      $ref: "#/components/schemas/Int64ID"
+                    source:
+                      $ref: "#/components/schemas/Source"
+                    instrument_ids:
+                      type: array
+                      minLength: 1
+                      maxLength: 1000
+                      items:
+                        $ref: "#/components/schemas/Int64ID"
+    post:
+      summary: Creates a new watchlists
+      parameters:
+        - *userID
+      requestBody:
+        description: The created watchlists will be added to the end of the list
+        required: true
+        content:
+          application/json:
+            schema:
+              required:
+                - name
+                - currency_id
+                - source
+              properties:
+                name:
+                  type: string
+                  maxLength: 200
+                  minLength: 1
+                  example: My Test Watchlist
+                  x-oapi-codegen-extra-tags:
+                    validate: min=1,max=200
+                currency_id:
+                  $ref: "#/components/schemas/Int64ID"
+                source:
+                  $ref: "#/components/schemas/Source"
+                instrument_ids:
+                  type: array
+                  minLength: 1
+                  maxLength: 1000
+                  items:
+                    $ref: "#/components/schemas/Int64ID"
+                  x-oapi-codegen-extra-tags:
+                    validate: omitempty,max=1000,unique
+      responses:
+        default: *error
+        '201':
+          description: Returns ids of created watchlist
+          content:
+            application/json:
+              schema:
+                required:
+                  - id
+                properties:
+                  id:
+                    $ref: "#/components/schemas/Int64ID"
+
+  /v1/watchlist/{watchlistID}/instrument/{instrumentID}:
+    delete:
+      summary: Deletes one instrument from watchlist
+      parameters:
+        - *userID
+        - name: watchlistID
+          in: path
+          description: Watchlist ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+            example: 2
+        - name: instrumentID
+          in: path
+          description: Instrument ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+            example: 3
+      responses:
+        default: *error
+        '200':
+          description: Returns ids of created watchlist
+          content:
+            application/json:
+              schema:
+                required:
+                  - watchlist_id
+                  - instrument_id
+                properties:
+                  watchlist_id:
+                    $ref: "#/components/schemas/Int64ID"
+                  instrument_id:
+                    $ref: "#/components/schemas/Int64ID"
+
+components:
+  schemas:
+    Error:
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int
+          description: Pray and believe
+          example: 500
+        message:
+          type: string
+          description: Error message
+          example: Error happens
+    Int64ID:
+      type: integer
+      format: int64
+      minLength: 1
+      minimum: 1
+      example: 1
+      x-oapi-codegen-extra-tags:
+        validate: min=1
+    Watchlist:
+      type: object
+      required:
+        - id
+        - name
+        - currency_id
+        - instrument_ids
+      properties: *watchlistProps
+    Source:
+      type: string
+      enum: [ 'desktop', 'ios', 'android', 'msite', 'ios-crypto', 'android-crypto' ]
+    UserIDsByInstrumentsResponse:
+      type: object
+      properties:
+        user_ids:
+          type: array
+          items:
+            type: integer
+            format: int64
+          example: [ 11,12,13,14,15 ]
+        cursor_value:
+          type: string
+      required:
+        - user_ids
+    UserIDsByInstrumentFilterResponse:
+      type: array
+      items:
+        $ref: "#/components/schemas/Int64ID"
+      example: [ 11,14,15 ]
