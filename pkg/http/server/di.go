@@ -5,8 +5,6 @@ import (
 	"net"
 	"net/http"
 
-	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -30,11 +28,11 @@ func Setup(ctx context.Context, c *di.Container, spec *openapi3.T) {
 			swaggerUIPath   = "/swagger/*"
 		)
 		var (
-			name           = di.GetNamed[string](c, config.AppName)
-			p              = prometheus.NewPrometheus(name, nil)
-			e              = echo.New()
-			log            = di.Get[*zap.Logger](c)
-			tracerProvider = di.Get[trace.TracerProvider](c)
+			name = di.GetNamed[string](c, config.AppName)
+			p    = prometheus.NewPrometheus(name, nil)
+			e    = echo.New()
+			log  = di.Get[*zap.Logger](c)
+			//tracerProvider = di.Get[trace.TracerProvider](c)
 		)
 		p.RequestCounterURLLabelMappingFunc = func(c echo.Context) string {
 			p := c.Path() // contains route path ala `/users/:id`
@@ -46,12 +44,12 @@ func Setup(ctx context.Context, c *di.Container, spec *openapi3.T) {
 		}
 		e.Logger = NewEchoZapLogger(log)
 		e.HideBanner = true
-		e.Use(middleware.CORS(), p.HandlerFunc)
-		e.Use(otelecho.Middleware(name, otelecho.WithTracerProvider(tracerProvider)))
+		//e.Use(middleware.CORS(), p.HandlerFunc)
+		//e.Use(otelecho.Middleware(name, otelecho.WithTracerProvider(tracerProvider)))
 		e.Use(middleware.Recover())
 		e.HTTPErrorHandler = func(err error, c echo.Context) {
-			ctx := c.Request().Context()
-			trace.SpanFromContext(ctx).RecordError(err)
+			//ctx := c.Request().Context()
+			//trace.SpanFromContext(ctx).RecordError(err)
 
 			e.DefaultHTTPErrorHandler(err, c)
 		}
